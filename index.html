@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explorando el Movimiento Corporal Humano: un viaje con la Señora biomecánica</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header id="hud" class="hidden">
+        <div class="hud-top">
+            <div id="hud-title" style="font-weight:bold; font-size:1.1rem; flex:1;"></div>
+            <div class="meter-container hidden" id="meter-container" title="Espalda de Carlos">
+                <div id="carlos-meter" class="meter-fill"></div>
+            </div>
+            <div style="display:flex; gap: 0.5rem; align-items:center;">
+                <span id="hud-points" class="hidden"><i class="fa-solid fa-star"></i> 0</span>
+            </div>
+        </div>
+        <div class="hud-nav" id="hud-nav"></div>
+    </header>
+    <main id="app"></main>
+    <div id="toast" aria-live="polite"></div>
+    
+    <div id="modal-glossary" class="modal-overlay" onclick="if(event.target==this) this.style.display='none'">
+        <div class="modal-content">
+            <h2 id="glossary-title">Término</h2>
+            <p id="glossary-desc" style="margin-top: 1rem;"></p>
+            <button class="btn-secondary" style="margin-top:1rem; width:100%" onclick="document.getElementById('modal-glossary').style.display='none'">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- Carga de scripts en orden estricto -->
+    <script src="js/data-story.js"></script>
+    <script src="js/data-quiz.js"></script>
+    <script src="js/core.js"></script>
+    <script src="js/voice.js"></script>
+    <script src="js/games.js"></script>
+    <script src="js/story.js"></script>
+    <script src="js/screens.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

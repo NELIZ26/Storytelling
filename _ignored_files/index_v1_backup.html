@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explorando el Movimiento Corporal Humano: un viaje con la Señora biomecánica</title>
+    <style>
+        :root {
+            --bg: #f4f7fb;
+            --card: #ffffff;
+            --primary: #1f6feb;
+            --accent: #f59e0b;
+            --ok: #16a34a;
+            --bad: #dc2626;
+            --text: #1e293b;
+            --muted: #64748b;
+            --border-radius: 14px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* HUD */
+        #hud {
+            background-color: var(--card);
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .hud-stats {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        .btn-restart {
+            background-color: transparent;
+            border: 1px solid var(--bad);
+            color: var(--bad);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .btn-restart:hover {
+            background-color: #fee2e2;
+        }
+
+        /* Layout */
+        #app {
+            flex: 1;
+            width: 100%;
+            max-width: 820px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        /* Componentes Comunes */
+        .card {
+            background-color: var(--card);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        h1, h2, h3 { margin-bottom: 1rem; }
+        
+        button {
+            font-family: inherit;
+            font-size: 1rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            min-height: 44px;
+            transition: all 0.2s;
+        }
+        button:focus-visible {
+            outline: 3px solid var(--accent);
+            outline-offset: 2px;
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            font-weight: bold;
+        }
+        .btn-primary:hover:not(:disabled) { background-color: #1a56db; }
+
+        .btn-secondary {
+            background-color: #e2e8f0;
+            color: var(--text);
+        }
+        .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+        /* Pantallas */
+        .screen { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .screen.active { display: block; }
+
+        /* Diálogo Señora Biomecánica */
+        .dialogue {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+            background: #e0f2fe;
+            padding: 1rem;
+            border-radius: var(--border-radius);
+        }
+        .avatar-svg {
+            width: 60px;
+            height: 60px;
+            flex-shrink: 0;
+        }
+        
+        /* Mapa */
+        .map-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+        .map-node {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--card);
+            border: 3px solid var(--muted);
+            cursor: pointer;
+            font-weight: bold;
+            text-align: center;
+            font-size: 0.8rem;
+            padding: 0.5rem;
+            transition: transform 0.2s;
+            position: relative;
+        }
+        .map-node:hover:not(.locked) { transform: scale(1.05); }
+        .map-node.completed { border-color: var(--ok); background-color: #f0fdf4; }
+        .map-node.active-node { border-color: var(--primary); box-shadow: 0 0 10px rgba(31,111,235,0.5); }
+        .map-node.locked { border-color: #cbd5e1; color: var(--muted); cursor: not-allowed; opacity: 0.7; }
+        .map-node .emoji { font-size: 1.5rem; margin-bottom: 0.2rem; }
+        
+        .map-node.final-node {
+            width: 100px;
+            height: 100px;
+            border-radius: var(--border-radius);
+            background-color: #fffbeb;
+            border-color: var(--accent);
+        }
+
+        /* Teoría */
+        .theory-steps { margin-bottom: 2rem; }
+        .theory-step { display: none; }
+        .theory-step.active { display: block; animation: fadeIn 0.3s; }
+        .theory-nav { display: flex; justify-content: space-between; margin-top: 1rem; }
+
+        /* Juegos Generales */
+        .game-container { margin-top: 2rem; padding-top: 2rem; border-top: 2px dashed #e2e8f0; }
+        .game-feedback {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 8px;
+            display: none;
+            font-weight: bold;
+        }
+        .game-feedback.show { display: block; animation: pop 0.3s; }
+        .game-feedback.success { background-color: #f0fdf4; color: var(--ok); border: 1px solid var(--ok); }
+        .game-feedback.error { background-color: #fef2f2; color: var(--bad); border: 1px solid var(--bad); }
+
+        .btn-reveal { margin-top: 1rem; display: none; width: 100%; }
+
+        /* Classify */
+        .classify-item { font-size: 1.1rem; text-align: center; margin-bottom: 1.5rem; font-weight: bold; }
+        .classify-buttons { display: flex; gap: 1rem; justify-content: center; }
+        .classify-buttons button { flex: 1; max-width: 200px; }
+
+        /* Match */
+        .match-container { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+        .match-col { display: flex; flex-direction: column; gap: 0.5rem; flex: 1; min-width: 250px; }
+        .match-btn { padding: 1rem; text-align: left; background: var(--card); border: 2px solid #e2e8f0; word-break: break-word;}
+        .match-btn.selected { border-color: var(--primary); background: #eff6ff; }
+        .match-btn.matched { border-color: var(--ok); background: #f0fdf4; opacity: 0.8; cursor: default; }
+        .match-btn.error-shake { animation: shake 0.4s; border-color: var(--bad); background: #fef2f2; }
+
+        /* Order */
+        .order-list { display: flex; flex-direction: column; gap: 0.5rem; }
+        .order-item { 
+            display: flex; align-items: center; gap: 1rem; background: var(--card); 
+            padding: 0.5rem 1rem; border: 1px solid #e2e8f0; border-radius: 8px;
+        }
+        .order-item.error { border-color: var(--bad); background: #fef2f2; }
+        .order-controls { display: flex; flex-direction: column; }
+        .order-controls button { padding: 0.2rem 0.5rem; min-height: 0; border-radius: 4px; font-size: 0.8rem; }
+
+        /* Choice */
+        .choice-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .choice-btn { text-align: left; background: var(--card); border: 2px solid #e2e8f0; height: auto; padding: 1rem;}
+        .choice-btn:hover:not(:disabled) { border-color: var(--primary); }
+        .choice-btn.correct { border-color: var(--ok); background: #f0fdf4; }
+        .choice-btn.incorrect { border-color: var(--bad); background: #fef2f2; }
+        
+        .choice-svg-container { display: flex; justify-content: space-around; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;}
+        .choice-svg-item { text-align: center; }
+
+        /* Multi */
+        .multi-list { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+        .multi-item { 
+            display: flex; align-items: center; gap: 0.75rem; padding: 1rem; 
+            background: var(--card); border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer;
+        }
+        .multi-item.selected { border-color: var(--primary); background: #eff6ff; }
+        .multi-item input { pointer-events: none; width: 1.2rem; height: 1.2rem; }
+
+        /* Toast */
+        #toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); color: white; padding: 0.75rem 1.5rem;
+            border-radius: 30px; font-weight: bold; pointer-events: none;
+            opacity: 0; transition: opacity 0.3s; z-index: 1000;
+        }
+        #toast.show { opacity: 1; }
+
+        /* Animaciones */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pop { 0% { transform: scale(0.95); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { animation: none !important; transition: none !important; }
+        }
+        
+        @media print {
+            #hud, button, .theory-nav { display: none !important; }
+            .theory-step { display: block !important; margin-bottom: 1rem; page-break-inside: avoid; }
+            .screen { display: block !important; page-break-after: always; }
+            #app { padding: 0; max-width: 100%; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <header id="hud">
+        <div style="font-weight:bold; font-size:1.1rem; max-width: 60%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            Explorando el Movimiento
+        </div>
+        <div class="hud-stats">
+            <span>⭐ <span id="hud-points">0</span> pts</span>
+            <span>📍 <span id="hud-progress">0</span>/7</span>
+            <button class="btn-restart" onclick="app.restart()">Reiniciar</button>
+        </div>
+    </header>
+
+    <main id="app">
+        <!-- Contenido dinámico -->
+    </main>
+
+    <div id="toast" aria-live="polite"></div>
+
+    <script>
+        // --- 1. CONTENIDO ---
+        const CONTENT = {
+            intro: {
+                title: "Explorando el Movimiento Corporal Humano: un viaje con la Señora biomecánica",
+                text: "¡Hola! Soy la Señora Biomecánica. Te guiaré por 6 estaciones para descubrir cómo funciona tu cuerpo en el trabajo y cómo protegerlo. Lee atentamente la teoría y luego supera el desafío de cada estación para ganar puntos. ¡Al final nos espera un caso real!"
+            },
+            stations: [
+                {
+                    id: 1, emoji: "💪", title: "Trabajo muscular: El motor oculto",
+                    intro: "Comencemos por nuestros motores: los músculos. ¿Sabías que quedarse quieto cansa más que moverse?",
+                    sections: [
+                        "<b>Trabajo estático:</b> el músculo genera tensión sin cambiar su longitud (contracción isométrica). Al mantenerse contraído comprime los capilares, reduce la llegada de oxígeno (isquemia transitoria, hipoxia local) y se acumulan metabolitos como el ácido láctico. Resultado: <b>fatiga rápida</b>.",
+                        "<b>Trabajo dinámico:</b> ciclos rítmicos de acortamiento (concéntrico) y elongación (excéntrico). Funciona como 'bomba muscular': favorece el retorno venoso y el aporte de nutrientes. Fatiga más lenta."
+                    ],
+                    game: {
+                        type: "classify",
+                        items: [
+                            { text: "Sostener una caja en el aire", cat: "E" },
+                            { text: "Pedalear", cat: "D" },
+                            { text: "Caminar", cat: "D" },
+                            { text: "Mantener el brazo extendido con una herramienta", cat: "E" },
+                            { text: "Permanecer de pie sin moverse frente a una línea de producción", cat: "E" },
+                            { text: "Subir escaleras", cat: "D" }
+                        ],
+                        categories: [ { id: "E", label: "Estático" }, { id: "D", label: "Dinámico" } ],
+                        explain: "El trabajo estático corta el flujo de sangre; el dinámico lo bombea."
+                    }
+                },
+                {
+                    id: 2, emoji: "🦴", title: "Sistema óseo: La arquitectura articular",
+                    intro: "Nuestro chasis está formado por 206 huesos unidos por articulaciones. ¡Vamos a emparejarlas!",
+                    sections: [
+                        "El esqueleto tiene <b>206 huesos</b> que funcionan como <b>palancas</b> movidas por la fuerza muscular.",
+                        "<b>Sinartrosis</b> (fijas): suturas craneales.<br><b>Anfiartrosis</b> (semimóviles): discos intervertebrales, sínfisis púbica.<br><b>Diartrosis</b> (sinoviales, móviles): glenohumeral (hombro), coxofemoral (cadera), femorotibial (rodilla).",
+                        "<b>Arcos de movilidad (grados):</b> flexión de hombro 0°–180°; flexión de rodilla 0°–135°; columna lumbar flexión 0°–60° y extensión 0°–25°."
+                    ],
+                    game: {
+                        type: "match",
+                        pairs: [
+                            { left: "Hombro (glenohumeral)", right: "Diartrosis · 0°–180°" },
+                            { left: "Rodilla (femorotibial)", right: "Diartrosis · 0°–135°" },
+                            { left: "Discos intervertebrales", right: "Anfiartrosis · movimiento limitado" },
+                            { left: "Suturas del cráneo", right: "Sinartrosis · sin movimiento" }
+                        ],
+                        explain: "Recuerda: Diartrosis = mucho movimiento. Anfiartrosis = poco. Sinartrosis = nada."
+                    }
+                },
+                {
+                    id: 3, emoji: "⚡", title: "Sistema muscular: Energía y filamentos",
+                    intro: "Veamos cómo ocurre la magia de la contracción a nivel microscópico.",
+                    sections: [
+                        "<b>Tipos de músculo:</b> esquelético (voluntario, estriado), cardíaco (estriado, involuntario), liso (visceral, involuntario).",
+                        "<b>Fibras tipo I:</b> lentas, rojas, oxidativas, ricas en mioglobina y mitocondrias; resistentes a la fatiga; sostienen la postura.<br><b>Fibras tipo II:</b> rápidas, blancas, glucolíticas; mucha potencia, se agotan rápido. La <b>mioglobina</b> almacena oxígeno para la célula muscular.",
+                        "<b>Contracción:</b> el impulso nervioso libera <b>Ca²⁺</b>, que deja libres los sitios activos de la actina; la cabeza de miosina se une, tracciona e hidroliza <b>ATP</b> (energía inmediata), que se resintetiza desde el <b>glucógeno muscular</b>."
+                    ],
+                    game: {
+                        type: "order",
+                        items: [
+                            { id: 1, text: "Llega el impulso nervioso" },
+                            { id: 2, text: "Se libera calcio (Ca²⁺)" },
+                            { id: 3, text: "La miosina se une a la actina y consume ATP" },
+                            { id: 4, text: "Los filamentos de actina y miosina se deslizan" },
+                            { id: 5, text: "El músculo se acorta (contracción)" }
+                        ],
+                        explain: "Todo empieza con el nervio, libera calcio, usa energía (ATP) para unir fibras, deslizar y contraer."
+                    }
+                },
+                {
+                    id: 4, emoji: "📐", title: "Postura: La geometría corporal",
+                    intro: "Una mala postura prolongada es enemiga silenciosa de tus articulaciones.",
+                    sections: [
+                        "Postura = alineación espacial de los segmentos corporales. Se clasifica en 3 ejes:",
+                        "1. <b>Según posición:</b> bípeda (de pie), sedente (sentado), en cuclillas.",
+                        "2. <b>Según tiempo de exposición:</b> <i>mantenida</i> (más de 2 horas continuas) o <i>prolongada</i> (más del 75 % de la jornada).",
+                        "3. <b>Según movimiento:</b> <i>neutra</i> (ángulos de confort), <i>forzada</i> (extremos del rango articular) o <i>antigravitatoria</i> (miembros superiores por encima de los hombros)."
+                    ],
+                    game: {
+                        type: "choice",
+                        question: "¿Cuál de estos puestos combina postura forzada, mantenida y antigravitatoria?",
+                        options: [
+                            { id: "A", text: "Secretaria sentada con espalda apoyada y teclado a la altura del codo" },
+                            { id: "B", text: "Cajero de pie que alterna el peso entre ambas piernas" },
+                            { id: "C", text: "Pintor de techos con los brazos sobre los hombros durante 3 horas seguidas", correct: true },
+                            { id: "D", text: "Operario que camina y transporta una caja liviana" }
+                        ],
+                        explain: "Brazos sobre los hombros = antigravitatoria; extremo del rango = forzada; 3 h continuas = mantenida."
+                    }
+                },
+                {
+                    id: 5, emoji: "🔄", title: "Movimiento y riesgo repetitivo",
+                    intro: "Hacer lo mismo una y otra vez puede lesionar nuestros tendones si no paramos a tiempo.",
+                    sections: [
+                        "<b>Trabajo repetitivo:</b> ciclos menores a 30 segundos, o más del 50 % del ciclo repite la misma secuencia de movimientos.",
+                        "<b>Riesgos:</b> microtraumatismos acumulativos en las vainas de los tendones: tenosinovitis, síndrome del túnel del carpo, epicondilitis.",
+                        "<b>Prevención:</b> rotación de puestos, rediseño ergonómico de mandos y herramientas, micropausas activas."
+                    ],
+                    game: {
+                        type: "multi",
+                        question: "Selecciona SOLO las medidas preventivas eficaces:",
+                        options: [
+                            { id: 1, text: "Rotar al trabajador entre puestos con movimientos distintos", correct: true },
+                            { id: 2, text: "Aumentar la velocidad de la línea para terminar antes", correct: false },
+                            { id: 3, text: "Rediseñar herramientas y mandos para reducir el esfuerzo", correct: true },
+                            { id: 4, text: "Eliminar los descansos para compensar la producción", correct: false },
+                            { id: 5, text: "Programar micropausas activas", correct: true },
+                            { id: 6, text: "Dar horas extra en el mismo puesto sin cambios", correct: false }
+                        ],
+                        explain: "Rotar, rediseñar y pausar son las claves. Acelerar o quitar descansos empeora el problema."
+                    }
+                },
+                {
+                    id: 6, emoji: "📦", title: "Carga y técnicas seguras",
+                    intro: "¡Llegamos a la última estación! Aprender a levantar objetos es fundamental para cuidar tu espalda.",
+                    sections: [
+                        "<b>Carga:</b> masa ≥ 3 kg sometida a levantamiento, descenso, empuje o tracción manual.",
+                        "<b>Técnica segura:</b> pies separados al ancho de los hombros, carga pegada al tronco (menor brazo de palanca), rodillas flexionadas, columna recta y <b>sin torsión del tronco</b>.",
+                        "<b>Límites (Colombia):</b> Resolución 2400 de 1979 — hombres 25 kg, mujeres 12,5 kg. <b>Internacional:</b> ISO 11228-1 y ecuación NIOSH, con peso de referencia de 23 kg en condiciones ideales."
+                    ],
+                    game: {
+                        type: "choice-svg",
+                        question: "¿Cuál es el levantamiento correcto?",
+                        options: [
+                            { id: "A", text: "A", desc: "Espalda encorvada, carga lejos", correct: false,
+                              svg: '<svg viewBox="0 0 100 100" width="80" height="80"><circle cx="40" cy="20" r="8" fill="none" stroke="currentColor" stroke-width="4"/><path d="M 40 28 Q 60 40 50 70 M 50 70 L 45 95 M 50 70 L 60 95 M 40 35 L 75 55 M 40 35 L 70 60" fill="none" stroke="currentColor" stroke-width="4"/><rect x="75" y="50" width="20" height="20" fill="currentColor"/></svg>' },
+                            { id: "B", text: "B", desc: "Rodillas flexionadas, espalda recta", correct: true,
+                              svg: '<svg viewBox="0 0 100 100" width="80" height="80"><circle cx="50" cy="20" r="8" fill="none" stroke="currentColor" stroke-width="4"/><path d="M 50 28 L 50 60 M 50 60 L 30 75 L 30 95 M 50 60 L 40 75 L 45 95 M 50 35 L 65 50" fill="none" stroke="currentColor" stroke-width="4"/><rect x="65" y="40" width="20" height="20" fill="currentColor"/></svg>' },
+                            { id: "C", text: "C", desc: "Tronco girado", correct: false,
+                              svg: '<svg viewBox="0 0 100 100" width="80" height="80"><circle cx="50" cy="20" r="8" fill="none" stroke="currentColor" stroke-width="4"/><path d="M 50 28 L 50 70 M 50 70 L 45 95 M 50 70 L 55 95 M 50 35 L 20 45 M 50 35 L 80 45" fill="none" stroke="currentColor" stroke-width="4"/><rect x="10" y="40" width="15" height="15" fill="currentColor"/><rect x="75" y="40" width="15" height="15" fill="currentColor"/></svg>' }
+                        ],
+                        explain: "La B es correcta: rodillas flexionadas, espalda recta y carga pegada al cuerpo."
+                    }
+                }
+            ],
+            carlos: {
+                intro: "Carlos trabaja en un almacén levantando, transportando y ubicando cajas de <b>15 kg</b> de forma repetitiva y <b>sin pausas</b>.",
+                questions: [
+                    {
+                        id: 1, q: "¿Qué tipo de trabajo muscular realiza Carlos?",
+                        a: "Trabajo <b>combinado</b>: <i>dinámico</i> al levantar, acomodar y bajar las cajas repetidamente, y <i>estático prolongado</i> en tronco y cintura escapular al sostener y transportar los 15 kg. Sin pausas, los músculos paravertebrales mantienen contracciones isométricas que limitan el flujo sanguíneo capilar y generan fatiga por hipoxia tisular."
+                    },
+                    {
+                        id: 2, q: "¿Qué sistemas anatómicos están involucrados?",
+                        a: "<ul><li><b>Osteoarticular:</b> articulaciones lumbosacras (L4-L5, L5-S1), discos, cápsulas; hombros y rodillas.</li><li><b>Muscular:</b> erectores espinales, dorsal ancho, glúteos, isquiotibiales, cuádriceps, flexores de los dedos.</li><li><b>Nervioso:</b> control motor voluntario, mecanorreceptores articulares y raíces del nervio ciático (riesgo de compresión).</li><li><b>Circulatorio:</b> microcirculación muscular con presión intramuscular sostenida.</li></ul>"
+                    },
+                    {
+                        id: 3, q: "¿Qué consecuencias o patologías puede tener?",
+                        a: "<ul><li><b>Columna:</b> lumbalgia mecánica, degeneración discal prematura, protrusión y hernia discal, agravadas por flexión + torsión.</li><li><b>Periféricas:</b> tendinopatía del manguito de los rotadores, bursitis y desórdenes musculoesqueléticos (DME) acumulativos.</li></ul>"
+                    },
+                    {
+                        id: 4, q: "¿Qué medidas preventivas recomiendas (nacional e internacional)?",
+                        a: "<ul><li><b>Colombia</b> (Res. 2400/1979, Decreto 1072/2015, GTC 45): ingreso al Programa de Vigilancia Epidemiológica osteomuscular; pausas activas dirigidas (cada 2 horas); capacitación en higiene postural y manejo manual de cargas.</li><li><b>Internacional</b> (ISO 11228-1, Directiva 90/269/CEE, NIOSH): <i>Ingeniería:</i> ayudas mecánicas (mesas elevadoras, transpaletas); ubicar carga entre nudillos y codos (≈ 50–110 cm). <i>Administrativos:</i> rotación de puestos y reducción de tiempo según ecuación NIOSH.</li></ul>"
+                    }
+                ]
+            }
+        };
+
+        const AVATAR_SVG = `<svg class="avatar-svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#bae6fd"/><circle cx="50" cy="40" r="25" fill="#fde047"/><path d="M 30 90 Q 50 60 70 90" fill="#0284c7"/><circle cx="40" cy="35" r="5" fill="#333"/><circle cx="60" cy="35" r="5" fill="#333"/><path d="M 35 35 L 45 35 M 55 35 L 65 35 M 45 35 Q 50 30 55 35" fill="none" stroke="#333" stroke-width="2"/><path d="M 45 50 Q 50 55 55 50" fill="none" stroke="#333" stroke-width="2"/><path d="M 35 20 Q 50 10 65 20 Q 50 0 35 20" fill="#78350f"/></svg>`;
+
+        // --- 2. ESTADO Y UTILIDADES ---
+        let state = {
+            screen: 'welcome', current: 1, unlocked: 1, completed: [], points: 0, carlosDone: []
+        };
+
+        const Storage = {
+            key: 'sb_progress_v1',
+            save() {
+                try { localStorage.setItem(this.key, JSON.stringify(state)); } catch(e) { console.warn("No se pudo guardar", e); }
+            },
+            load() {
+                try {
+                    const data = localStorage.getItem(this.key);
+                    if (data) {
+                        const parsed = JSON.parse(data);
+                        if (parsed.points !== undefined && parsed.unlocked !== undefined) {
+                            state = parsed;
+                        }
+                    }
+                } catch(e) { console.warn("No se pudo cargar", e); }
+            }
+        };
+
+        const el = id => document.getElementById(id);
+        const ce = tag => document.createElement(tag);
+        const shuffle = arr => arr.slice().sort(() => Math.random() - 0.5);
+        
+        function showToast(msg) {
+            const t = el('toast');
+            t.textContent = msg;
+            t.className = 'show';
+            setTimeout(() => t.className = '', 3000);
+        }
+
+        function updateHUD() {
+            el('hud-points').textContent = state.points;
+            let progress = state.completed.length;
+            if (state.carlosDone.length === 4) progress++;
+            el('hud-progress').textContent = progress;
+        }
+
+        function award(stationId, attempts) {
+            if (state.completed.includes(stationId)) return;
+            let pts = 5; // default for 3+ attempts or 'reveal'
+            if (attempts === 1) pts = 20;
+            else if (attempts === 2) pts = 10;
+            
+            state.points += pts;
+            state.completed.push(stationId);
+            if (stationId === state.unlocked && state.unlocked < 6) {
+                state.unlocked++;
+            }
+            Storage.save();
+            updateHUD();
+            showToast(`¡Completado! Ganaste ${pts} pts.`);
+        }
+
+        function awardCarlos(cardId) {
+            if (state.carlosDone.includes(cardId)) return;
+            state.points += 5;
+            state.carlosDone.push(cardId);
+            Storage.save();
+            updateHUD();
+        }
+
+        // --- 3. NAVEGACIÓN ---
+        function go(screenName, param = null) {
+            state.screen = screenName;
+            const container = el('app');
+            container.innerHTML = '';
+            
+            if (screenName === 'station' && param > state.unlocked && param !== 7) {
+                param = state.unlocked; // prevent skipping
+            }
+            if (screenName === 'station') state.current = param;
+
+            Storage.save();
+            window.scrollTo(0, 0);
+
+            switch(screenName) {
+                case 'welcome': renderWelcome(container); break;
+                case 'map': renderMap(container); break;
+                case 'station': renderStation(container, param); break;
+                case 'carlos': renderCarlos(container); break;
+                case 'final': renderFinal(container); break;
+            }
+        }
+
+        // --- 4. RENDERERS ---
+        function renderWelcome(container) {
+            container.innerHTML = `
+                <div class="card" style="text-align: center;">
+                    <div style="display:flex; justify-content:center; margin-bottom: 1rem;">${AVATAR_SVG}</div>
+                    <h1>${CONTENT.intro.title}</h1>
+                    <p style="font-size: 1.1rem; margin-bottom: 2rem;">${CONTENT.intro.text}</p>
+                    <button class="btn-primary" onclick="go('map')">🚀 Comenzar la ruta</button>
+                </div>
+            `;
+        }
+
+        function renderMap(container) {
+            container.innerHTML = `
+                <div class="card">
+                    <h2>Mapa de Estaciones</h2>
+                    <p>Completa las 6 estaciones para desbloquear el reto final.</p>
+                    <div class="map-container" id="map-nodes"></div>
+                </div>
+            `;
+            const mapNodes = el('map-nodes');
+            CONTENT.stations.forEach((st, idx) => {
+                const num = idx + 1;
+                const isLocked = num > state.unlocked;
+                const isCompleted = state.completed.includes(num);
+                const node = ce('div');
+                node.className = `map-node ${isLocked ? 'locked' : ''} ${isCompleted ? 'completed' : ''}`;
+                
+                let icon = isLocked ? '🔒' : (isCompleted ? '✅' : st.emoji);
+                node.innerHTML = `<span class="emoji">${icon}</span><span>${num}</span>`;
+                
+                if (!isLocked) {
+                    node.onclick = () => go('station', num);
+                }
+                mapNodes.appendChild(node);
+            });
+
+            // Reto final
+            const allCompleted = state.completed.length >= 6;
+            const finalNode = ce('div');
+            finalNode.className = `map-node final-node ${!allCompleted ? 'locked' : ''} ${state.carlosDone.length===4 ? 'completed' : ''}`;
+            finalNode.innerHTML = `<span class="emoji">${allCompleted ? '🏭' : '🔒'}</span><span>Caso Carlos</span>`;
+            if (allCompleted) finalNode.onclick = () => go('carlos');
+            mapNodes.appendChild(finalNode);
+        }
+
+        function renderStation(container, id) {
+            const st = CONTENT.stations.find(s => s.id === id);
+            container.innerHTML = `
+                <div class="card">
+                    <h2>Estación ${st.id}: ${st.title}</h2>
+                    <div class="dialogue">
+                        ${AVATAR_SVG}
+                        <div><p><b>Señora Biomecánica:</b><br>${st.intro}</p></div>
+                    </div>
+                    <div id="theory-container" class="theory-steps"></div>
+                    <div class="theory-nav">
+                        <button id="btn-prev" class="btn-secondary" disabled>Anterior</button>
+                        <button id="btn-next" class="btn-primary">Siguiente</button>
+                    </div>
+                </div>
+                <div id="game-area" class="card" style="display:none;">
+                    <h3>¡Desafío!</h3>
+                    <div id="game-wrapper"></div>
+                    <div id="game-feedback" class="game-feedback"></div>
+                    <button id="btn-reveal" class="btn-secondary btn-reveal">Ver respuesta (otorga menos puntos)</button>
+                </div>
+                <div style="text-align:center; margin-top: 1rem;">
+                    <button class="btn-secondary" onclick="go('map')">Volver al mapa</button>
+                </div>
+            `;
+
+            // Teoría (tarjetas por pasos)
+            const theoryContainer = el('theory-container');
+            st.sections.forEach((sec, idx) => {
+                const div = ce('div');
+                div.className = `theory-step ${idx === 0 ? 'active' : ''}`;
+                div.innerHTML = `<p>${sec}</p>`;
+                theoryContainer.appendChild(div);
+            });
+
+            let currentStep = 0;
+            const btnPrev = el('btn-prev');
+            const btnNext = el('btn-next');
+            const steps = theoryContainer.querySelectorAll('.theory-step');
+
+            const updateTheoryNav = () => {
+                steps.forEach((el, idx) => el.classList.toggle('active', idx === currentStep));
+                btnPrev.disabled = currentStep === 0;
+                if (currentStep === steps.length - 1) {
+                    btnNext.textContent = "¡Al desafío!";
+                } else {
+                    btnNext.textContent = "Siguiente";
+                }
+            };
+
+            btnPrev.onclick = () => { if(currentStep > 0) { currentStep--; updateTheoryNav(); } };
+            btnNext.onclick = () => {
+                if(currentStep < steps.length - 1) { currentStep++; updateTheoryNav(); }
+                else {
+                    el('game-area').style.display = 'block';
+                    el('btn-prev').parentElement.style.display = 'none'; // ocultar nav teoría
+                    initGame(st);
+                    el('game-area').scrollIntoView({behavior: 'smooth'});
+                }
+            };
+        }
+
+        function renderCarlos(container) {
+            const c = CONTENT.carlos;
+            container.innerHTML = `
+                <div class="card">
+                    <h2>Reto Final: El Caso de Carlos 🏭</h2>
+                    <div class="dialogue">
+                        ${AVATAR_SVG}
+                        <div><p>${c.intro}</p><p>Analiza el caso y revela mis respuestas. ¡Cada una te da puntos!</p></div>
+                    </div>
+                    <div id="carlos-cards"></div>
+                </div>
+                <div style="text-align:center; margin-top: 1rem;">
+                    <button class="btn-primary" id="btn-finish" disabled onclick="go('final')">Ver resultados finales</button>
+                </div>
+            `;
+            
+            const cards = el('carlos-cards');
+            c.questions.forEach(q => {
+                const card = ce('div');
+                card.className = 'card';
+                card.style.border = '2px solid #e2e8f0';
+                card.style.boxShadow = 'none';
+                
+                const isDone = state.carlosDone.includes(q.id);
+                
+                card.innerHTML = `
+                    <p style="font-weight:bold; margin-bottom: 0.5rem;">${q.id}. ${q.q}</p>
+                    <button class="btn-secondary" id="btn-carlos-${q.id}" ${isDone ? 'style="display:none;"' : ''}>Pensar mi respuesta 🤔</button>
+                    <div id="ans-carlos-${q.id}" style="${isDone ? 'display:block;' : 'display:none;'} margin-top:1rem; padding-top:1rem; border-top:1px solid #e2e8f0;">
+                        ${q.a}
+                    </div>
+                `;
+                
+                if (!isDone) {
+                    card.querySelector('button').onclick = (e) => {
+                        e.target.style.display = 'none';
+                        card.querySelector('div').style.display = 'block';
+                        awardCarlos(q.id);
+                        checkFinalBtn();
+                    };
+                }
+                cards.appendChild(card);
+            });
+            
+            const checkFinalBtn = () => {
+                if (state.carlosDone.length === 4) el('btn-finish').disabled = false;
+            };
+            checkFinalBtn();
+        }
+
+        function renderFinal(container) {
+            let msg = "";
+            let color = "";
+            if (state.points >= 110) { msg = "¡Experta/o en ergonomía!"; color = "var(--ok)"; }
+            else if (state.points >= 70) { msg = "¡Muy buen recorrido!"; color = "var(--primary)"; }
+            else { msg = "¡Repasemos y vuelve a intentarlo!"; color = "var(--accent)"; }
+
+            container.innerHTML = `
+                <div class="card" style="text-align:center;">
+                    <h1>Resultados Finales</h1>
+                    <h2 style="font-size: 3rem; color: ${color}; margin: 1rem 0;">${state.points} / 140 pts</h2>
+                    <div class="dialogue" style="justify-content:center; text-align:left;">
+                        ${AVATAR_SVG}
+                        <div><p><b>Señora Biomecánica:</b><br>${msg}</p></div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>Ideas Clave</h3>
+                    <ul style="padding-left: 1.5rem; margin-bottom: 1rem;">
+                        <li>El trabajo estático fatiga más rápido que el dinámico por falta de flujo sanguíneo.</li>
+                        <li>Las articulaciones tipo diartrosis (como el hombro) son las de mayor movilidad.</li>
+                        <li>La contracción muscular requiere calcio y energía en forma de ATP.</li>
+                        <li>Las posturas forzadas, mantenidas y antigravitatorias aumentan el riesgo de lesiones.</li>
+                        <li>El trabajo repetitivo requiere rotación, micropausas y buen diseño, no ir más rápido.</li>
+                        <li>Levanta cargas con piernas flexionadas, espalda recta y sin girar el tronco.</li>
+                    </ul>
+                    
+                    <h4 style="margin-top: 1.5rem;">Referencias normativas citadas:</h4>
+                    <ul style="font-size: 0.9rem; color: var(--muted); padding-left: 1.5rem;">
+                        <li>Colombia: Resolución 2400 de 1979</li>
+                        <li>Colombia: Decreto 1072 de 2015</li>
+                        <li>Colombia: GTC 45</li>
+                        <li>Internacional: ISO 11228-1</li>
+                        <li>Internacional: Ecuación NIOSH</li>
+                        <li>Internacional: Directiva 90/269/CEE</li>
+                    </ul>
+                </div>
+                
+                <div style="text-align:center; gap: 1rem; display:flex; justify-content:center;">
+                    <button class="btn-secondary" onclick="go('map')">Volver al mapa</button>
+                    <button class="btn-restart" onclick="app.restart()">Reiniciar progreso</button>
+                </div>
+            `;
+        }
+
+        // --- 5. MOTORES DE MINIJUEGO ---
+        function initGame(station) {
+            const wrapper = el('game-wrapper');
+            const feedback = el('game-feedback');
+            const btnReveal = el('btn-reveal');
+            wrapper.innerHTML = '';
+            feedback.className = 'game-feedback';
+            btnReveal.style.display = 'none';
+
+            let attempts = 0;
+            const MAX_ATTEMPTS = 2;
+            const isCompleted = state.completed.includes(station.id);
+
+            const showFeedback = (isSuccess, text) => {
+                feedback.innerHTML = `${isSuccess ? '✔' : '✖'} ${text}`;
+                feedback.className = `game-feedback show ${isSuccess ? 'success' : 'error'}`;
+                if (!isSuccess) {
+                    wrapper.style.animation = 'none';
+                    wrapper.offsetHeight; // trigger reflow
+                    wrapper.style.animation = 'shake 0.4s';
+                }
+            };
+
+            const finishGame = (success) => {
+                if (!success) {
+                    attempts++;
+                    if (attempts >= MAX_ATTEMPTS && !isCompleted) {
+                        btnReveal.style.display = 'block';
+                    }
+                } else {
+                    attempts++;
+                    showFeedback(true, `¡Correcto! ${station.game.explain}`);
+                    btnReveal.style.display = 'none';
+                    if (!isCompleted) award(station.id, attempts);
+                    lockGame(wrapper);
+                }
+            };
+
+            btnReveal.onclick = () => {
+                showFeedback(true, `Respuesta revelada: ${station.game.explain}`);
+                btnReveal.style.display = 'none';
+                if (!isCompleted) award(station.id, 3); // 5 pts
+                solveGame(station.game, wrapper);
+                lockGame(wrapper);
+            };
+
+            // Renderizar motor específico
+            switch(station.game.type) {
+                case 'classify': engineClassify(wrapper, station.game, finishGame, showFeedback); break;
+                case 'match': engineMatch(wrapper, station.game, finishGame, showFeedback); break;
+                case 'order': engineOrder(wrapper, station.game, finishGame, showFeedback); break;
+                case 'choice': engineChoice(wrapper, station.game, finishGame, showFeedback); break;
+                case 'choice-svg': engineChoiceSvg(wrapper, station.game, finishGame, showFeedback); break;
+                case 'multi': engineMulti(wrapper, station.game, finishGame, showFeedback); break;
+            }
+
+            if (isCompleted) {
+                solveGame(station.game, wrapper);
+                lockGame(wrapper);
+                showFeedback(true, `Ya completaste esta estación. ${station.game.explain}`);
+            }
+        }
+
+        function lockGame(wrapper) {
+            const btns = wrapper.querySelectorAll('button, input');
+            btns.forEach(b => { b.disabled = true; b.style.pointerEvents = 'none'; });
+        }
+
+        // --- Motores Específicos ---
+
+        function engineClassify(wrapper, data, finish, showFB) {
+            let currentIndex = 0;
+            const items = shuffle(data.items);
+            
+            const renderItem = () => {
+                if (currentIndex >= items.length) {
+                    finish(true);
+                    return;
+                }
+                const item = items[currentIndex];
+                wrapper.innerHTML = `
+                    <div class="card classify-item">${item.text}</div>
+                    <div class="classify-buttons">
+                        ${data.categories.map(c => `<button class="btn-primary" data-cat="${c.id}">${c.label}</button>`).join('')}
+                    </div>
+                    <p style="text-align:center; margin-top:1rem; font-size:0.9rem; color:var(--muted)">
+                        Elemento ${currentIndex + 1} de ${items.length}
+                    </p>
+                `;
+                wrapper.querySelectorAll('button').forEach(btn => {
+                    btn.onclick = () => {
+                        if (btn.dataset.cat === item.cat) {
+                            currentIndex++;
+                            renderItem();
+                        } else {
+                            showFB(false, "Incorrecto, piénsalo bien.");
+                            finish(false);
+                        }
+                    };
+                });
+            };
+            renderItem();
+        }
+
+        function engineMatch(wrapper, data, finish, showFB) {
+            let leftCol = shuffle(data.pairs.map(p => ({ text: p.left, id: p.left })));
+            let rightCol = shuffle(data.pairs.map(p => ({ text: p.right, id: p.left }))); // id is the left text for matching
+            
+            wrapper.innerHTML = `
+                <p style="margin-bottom:1rem; text-align:center;">Selecciona uno de la izquierda y su pareja en la derecha.</p>
+                <div class="match-container">
+                    <div class="match-col" id="m-left">
+                        ${leftCol.map(item => `<button class="match-btn m-l" data-id="${item.id}">${item.text}</button>`).join('')}
+                    </div>
+                    <div class="match-col" id="m-right">
+                        ${rightCol.map(item => `<button class="match-btn m-r" data-id="${item.id}">${item.text}</button>`).join('')}
+                    </div>
+                </div>
+            `;
+
+            let selectedLeft = null;
+            let matchesCount = 0;
+
+            const leftBtns = wrapper.querySelectorAll('.m-l');
+            const rightBtns = wrapper.querySelectorAll('.m-r');
+
+            leftBtns.forEach(btn => {
+                btn.onclick = () => {
+                    if (btn.classList.contains('matched')) return;
+                    leftBtns.forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    selectedLeft = btn;
+                };
+            });
+
+            rightBtns.forEach(btn => {
+                btn.onclick = () => {
+                    if (btn.classList.contains('matched') || !selectedLeft) return;
+                    
+                    if (btn.dataset.id === selectedLeft.dataset.id) {
+                        btn.classList.add('matched');
+                        selectedLeft.classList.add('matched');
+                        selectedLeft.classList.remove('selected');
+                        selectedLeft = null;
+                        matchesCount++;
+                        if (matchesCount === data.pairs.length) finish(true);
+                    } else {
+                        showFB(false, "Esa no es la pareja correcta.");
+                        btn.classList.add('error-shake');
+                        setTimeout(() => btn.classList.remove('error-shake'), 400);
+                        selectedLeft.classList.remove('selected');
+                        selectedLeft = null;
+                        finish(false);
+                    }
+                };
+            });
+        }
+
+        function engineOrder(wrapper, data, finish, showFB) {
+            let items = shuffle([...data.items]);
+            
+            const renderList = () => {
+                wrapper.innerHTML = `
+                    <div class="order-list">
+                        ${items.map((item, idx) => `
+                            <div class="order-item" data-id="${item.id}">
+                                <div class="order-controls">
+                                    <button class="btn-secondary" onclick="app.moveOrder(${idx}, -1)" ${idx===0?'disabled':''}>▲</button>
+                                    <button class="btn-secondary" onclick="app.moveOrder(${idx}, 1)" ${idx===items.length-1?'disabled':''}>▼</button>
+                                </div>
+                                <div>${item.text}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button class="btn-primary" style="margin-top:1rem; width:100%" id="btn-check-order">Comprobar orden</button>
+                `;
+                
+                el('btn-check-order').onclick = () => {
+                    let isCorrect = true;
+                    const domItems = wrapper.querySelectorAll('.order-item');
+                    domItems.forEach((el, idx) => {
+                        if (parseInt(el.dataset.id) !== data.items[idx].id) {
+                            isCorrect = false;
+                            el.classList.add('error');
+                        } else {
+                            el.classList.remove('error');
+                        }
+                    });
+                    
+                    if (isCorrect) finish(true);
+                    else {
+                        showFB(false, "El orden no es correcto. Revisa los marcados en rojo.");
+                        finish(false);
+                    }
+                };
+            };
+            
+            window.app.moveOrder = (idx, dir) => {
+                if (idx + dir < 0 || idx + dir >= items.length) return;
+                const temp = items[idx];
+                items[idx] = items[idx + dir];
+                items[idx + dir] = temp;
+                renderList();
+            };
+            
+            renderList();
+        }
+
+        function engineChoice(wrapper, data, finish, showFB) {
+            wrapper.innerHTML = `
+                <p style="font-weight:bold; margin-bottom:1rem;">${data.question}</p>
+                <div class="choice-list">
+                    ${data.options.map((opt, i) => `
+                        <button class="choice-btn" data-idx="${i}">${opt.text}</button>
+                    `).join('')}
+                </div>
+            `;
+            
+            wrapper.querySelectorAll('button').forEach(btn => {
+                btn.onclick = () => {
+                    const opt = data.options[btn.dataset.idx];
+                    wrapper.querySelectorAll('button').forEach(b => b.classList.remove('incorrect', 'correct'));
+                    if (opt.correct) {
+                        btn.classList.add('correct');
+                        finish(true);
+                    } else {
+                        btn.classList.add('incorrect');
+                        showFB(false, "Opción incorrecta.");
+                        finish(false);
+                    }
+                };
+            });
+        }
+        
+        function engineChoiceSvg(wrapper, data, finish, showFB) {
+            wrapper.innerHTML = `
+                <p style="font-weight:bold; margin-bottom:1rem; text-align:center;">${data.question}</p>
+                <div class="choice-svg-container">
+                    ${data.options.map((opt, i) => `
+                        <div class="choice-svg-item">
+                            ${opt.svg}
+                            <button class="choice-btn" style="display:block; width:100%; text-align:center;" data-idx="${i}">Opción ${opt.text}</button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            wrapper.querySelectorAll('button').forEach(btn => {
+                btn.onclick = () => {
+                    const opt = data.options[btn.dataset.idx];
+                    wrapper.querySelectorAll('button').forEach(b => b.classList.remove('incorrect', 'correct'));
+                    if (opt.correct) {
+                        btn.classList.add('correct');
+                        finish(true);
+                    } else {
+                        btn.classList.add('incorrect');
+                        showFB(false, "Esa no es la técnica correcta.");
+                        finish(false);
+                    }
+                };
+            });
+        }
+
+        function engineMulti(wrapper, data, finish, showFB) {
+            wrapper.innerHTML = `
+                <p style="font-weight:bold; margin-bottom:1rem;">${data.question}</p>
+                <div class="multi-list">
+                    ${data.options.map(opt => `
+                        <label class="multi-item">
+                            <input type="checkbox" value="${opt.id}">
+                            <span>${opt.text}</span>
+                        </label>
+                    `).join('')}
+                </div>
+                <button class="btn-primary" style="width:100%" id="btn-check-multi">Comprobar</button>
+            `;
+            
+            wrapper.querySelectorAll('.multi-item').forEach(lbl => {
+                lbl.onclick = (e) => {
+                    if(e.target.tagName !== 'INPUT') {
+                        const cb = lbl.querySelector('input');
+                        cb.checked = !cb.checked;
+                    }
+                    lbl.classList.toggle('selected', lbl.querySelector('input').checked);
+                };
+            });
+
+            el('btn-check-multi').onclick = () => {
+                const selectedIds = Array.from(wrapper.querySelectorAll('input:checked')).map(cb => parseInt(cb.value));
+                const correctIds = data.options.filter(o => o.correct).map(o => o.id);
+                
+                const isExactMatch = selectedIds.length === correctIds.length && 
+                                     selectedIds.every(id => correctIds.includes(id));
+                
+                if (isExactMatch) {
+                    finish(true);
+                } else {
+                    let correctCount = selectedIds.filter(id => correctIds.includes(id)).length;
+                    showFB(false, `No es exacto. Tienes ${correctCount} aciertos entre tus seleccionadas.`);
+                    finish(false);
+                }
+            };
+        }
+
+        // --- Resolver visualmente cuando se ve respuesta ---
+        function solveGame(gameData, wrapper) {
+            wrapper.innerHTML = '<p style="color:var(--ok); font-weight:bold; text-align:center; padding: 2rem;">Resuelto automáticamente.</p>';
+            // Simple visual override when solved.
+        }
+
+        // --- 6. INICIALIZACIÓN ---
+        window.app = {
+            restart: () => {
+                if(confirm("¿Estás seguro de reiniciar todo el progreso?")) {
+                    localStorage.removeItem(Storage.key);
+                    state = { screen: 'welcome', current: 1, unlocked: 1, completed: [], points: 0, carlosDone: [] };
+                    go('welcome');
+                }
+            }
+        };
+
+        function init() {
+            Storage.load();
+            
+            // Modo docente
+            if (window.location.search.includes('docente=1')) {
+                state.unlocked = 7;
+                console.log("Modo docente activo: todas las estaciones desbloqueadas.");
+            }
+
+            // Si recarga a mitad de estación, volver al mapa
+            if (state.screen === 'station' || state.screen === 'carlos') {
+                go('map');
+            } else {
+                go(state.screen);
+            }
+            updateHUD();
+        }
+
+        window.onerror = function(msg) {
+            showToast("Algo salió mal, recarga la página por favor.");
+        };
+
+        init();
+    </script>
+</body>
+</html>
