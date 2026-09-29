@@ -27,7 +27,7 @@ SB.clearTimers = () => {
 
 SB.showToast = msg => {
     const t = SB.el('toast');
-    t.textContent = msg;
+    t.innerHTML = msg;
     t.className = 'show';
     setTimeout(() => t.className='', 3000);
 };
